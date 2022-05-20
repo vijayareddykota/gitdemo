@@ -1,0 +1,83 @@
+use hivedb;
+
+DROP table if exists Flights;
+
+CREATE EXTERNAL TABLE IF NOT EXISTS Flights (ID int, YEAR int, MONTH INT,DAY INT, DAY_OF_WEEK INT,AIRLINE VARCHAR(20),
+FLIGHT_NUMBER INT, TAIL_NUMBER VARCHAR(30),ORIGIN_AIRPORT VARCHAR(20), DESTINATION_AIRPORT VARCHAR(20), SCHEDULED_DEPARTURE INT,
+DEPARTURE_TIME INT,DEPARTURE_DELAY INT, TAXI_OUT INT, WHEELS_OFF INT,SCHEDULED_TIME INT,ELAPSED_TIME INT, AIR_TIME INT,DISTANCE INT, 
+WHEELS_ON INT, TAXI_IN INT, SCHEDULED_ARRIVAL INT, ARRIVAL_TIME INT, ARRIVAL_DELAY INT,DIVERTED INT, CANCELLED INT,
+CANCELLATION_REASON VARCHAR(50),AIR_SYSTEM_DELAY INT, SECURITY_DELAY INT,AIRLINE_DELAY INT, LATE_AIRCRAFT_DELAY INT, WEATHER_DELAY INT)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+LOCATION '/Flights';
+
+select ID,YEAR,MONTH from airline_delayDB limit 20;
+
+drop table if exists parquet_airline_delayDB;
+
+CREATE EXTERNAL TABLE IF NOT EXISTS parquet_Flights(ID INT, YEAR INT, MONTH INT, DAY INT, DAY_OF_WEEK INT,AIRLINE VARCHAR(20),
+FLIGHT_NUMBER INT, TAIL_NUMBER VARCHAR(30),ORIGIN_AIRPORT VARCHAR(20), DESTINATION_AIRPORT VARCHAR(20), SCHEDULED_DEPARTURE INT, 
+DEPARTURE_TIME INT,DEPARTURE_DELAY INT, TAXI_OUT INT, WHEELS_OFF INT, SCHEDULED_TIME INT, ELAPSED_TIME INT, AIR_TIME INT,
+DISTANCE INT, WHEELS_ON INT, TAXI_IN INT, SCHEDULED_ARRIVAL INT, ARRIVAL_TIME INT, ARRIVAL_DELAY INT,
+DIVERTED INT, CANCELLED INT, c VARCHAR(10),AIR_SYSTEM_DELAY INT, SECURITY_DELAY INT,
+AIRLINE_DELAY INT, LATE_AIRCRAFT_DELAY INT, WEATHER_DELAY INT)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS parquetfile;
+
+insert into table parquet_Flights
+select * from Flights;
+
+select * from parquet_Flights limit 5;
+
+--3. Display first five rows of table
+select * from Flightstbl limit 10;
+
+--d) Average arrival delay caused by airlines 
+select AIRLINE, avg(AIRLINE_DELAY) as avg_of_AIRLINE_DELAY from parquet_FLIGHTS
+group by AIRLINE order by avg_of_AIRLINE_DELAY desc; 
+
+--e) Days of months with respected to average of arrival delays 
+select MONTH, DAY, avg(AIRLINE_DELAY) as avg_of_AIRLINE_DELAY from parquet_FLIGHTS 
+group by MONTH, DAY order by MONTH dec; 
+
+--f) Arrange weekdays with respect to the average arrival delays caused 
+select DAY_OF_WEEK, avg(AIRLINE_DELAY) as avg_of_AIRLINE_DELAY from parquet_FLIGHTS 
+group by DAY_OF_WEEK order by DAY_OF_WEEK desc; 
+
+--g) Arrange Days of month as per cancellations done in Descending 
+select MONTH, DAY, SUM(CANCELLED) as TOTAL_CANCEL from parquet_FLIGHTS group by MONTH,DAY order by TOTAL_CANCEL desc;
+
+--h) Finding busiest airports with respect to day of week 
+select DAY_OF_WEEK, count (ORIGIN_AIRPORT) as origin_count, count(DESTINATION_AIRPORT destination_count from parquet_FLIGHTS 
+group by DAY_OF_WEEK order by origin_count, destination_count desc;
+
+--i) Finding airlines that make the maximum number of cancellations 
+select AIRLINE, SUM(CANCELLED) as avg_CANCELLED from parquet_FLIGHTS group by AIRLINE order by avg_CANCELLED desc;
+
+--j) Find and order airlines in descending that make the most number of diversions 
+select AIRLINE, COUNT(DIVERTED) as DIVERSION_COUNT WHERE from parquet_FLIGHTS DIVERTED group by AIRLINE order by AIRLINE desc;
+
+--r) Finding AIRLINES with its total flight count, total number of flights arrival delayed by more than 36 Minutes, & of such flights delayed by more than 30 
+--minutes when it is not Weekends with mininun count of flights from Airlines by more than 10. Also Exclude some of Airlines 'AK', 'HI', 'PR', 'VI' and arrange 
+--output in descending order by % of such count of flights.
+
+select AIRLINE, total flights, airline_delay_gt_30, not weekend, not weekend 100/total flights as Percentage from (select AIRLINE, count(AIRLINE) as total flights, 
+sum(case when ARRIVAL DELAY> 30 then 1 else 6 end) as atrline_delay_gt_38, sun(case when ARRIVAL DELAY> 30 and (DAY OF WEEK> 6 and DAY OF WEEK 7) 
+then 1 else e end) as not weekend 
+from Flights Bucket where AIRLINE not in ('AK', 'HI', 'PR', 'VI') group by AIRLINE having total flights 10) as sample order by Percentage desc;
+
+--s) Finding AIRLINES with its total flight count with total number of flights departure delayed by less than 30 Minutes, % of such flights delayed by less than 30 
+minutes when it is Weekends with minimum Icount of flights from Airlines by more than 10. Also Exclude sone of Airlines 'AK', 'HI", "PR", "VI" and arrange output in 
+descending order by % of such count of flights.
+
+select AIRLINE, total flights, departure_delay_gt_38, not weekend, not weekend 100/total flights as Percentage fron (select AIRLINE, count (AIRLINE) as total 
+flights, sun(case when DEPARTURE DELAY 30 then 1 else 0 end) as departure_delay gt 36, sun(case when DEPARTURE DELAY 30 and (DAY OF MEEK 6 and DAY OF WEEK 7) then 1 
+else e end) as not weeks --fron Flights Bucket where AIRLINE not in ('AK, HI, PR', 'VI' --group by AIRLINE having total flights> 10) as sample order by Percentage 
+desc;
+
+--t) When is the best time of day/day of week/time of a year to fly with minimum delays?
+select DAY OF WEEK, avg(ARRIVAL_DELAY)+ avg(DEPARTURE_DELAY) as AVC Delays from parquet flight

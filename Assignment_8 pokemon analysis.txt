@@ -1,0 +1,56 @@
+create database if not exists pokemon;
+
+-- 2. Use Database
+use pokemon;
+
+drop table if exists pokemon;
+
+create external table if not exists pokemon (Number Int,Name VARCHAR(20),Type1 VARCHAR(20),Type2 VARCHAR(20),Total Int,HP Int,
+Attack Int,Defense Int,Sp_Atk Int,Sp_Def Int,Speed Int,Generation Int,Legendary VARCHAR(20))
+row format delimited
+fields terminated BY ','
+lines terminated BY '\n'
+location '/pokemon'
+tblproperties ("skip.header.line.count" = "1");
+
+select * from pokemon limit 5;
+
+c)// Find out the average HP (Hit Points) of all the Pokémon
+
+--Select avg(HP) from pokemon;
+
+
+d)// Create and insert values of the existing table into a new table with an additional column power_rate into “powerful”, “moderate” and “powerless” from the table “Pokémon”
+
+--create table pokemon1 as select *, IF(HP>69.25875, 'powerful', IF(HP<69.25875, 'Moderate','powerless')) AS power_rate from pokemon;
+--select COUNT(name),power_rate from pokemon1 group by power_rate;
+
+
+e)// Find out top 10 Pokémon according to their HP
+
+select name,hp from pokemon order by hp desc limit 10;
+
+
+f)// Find out top 10 Pokémon based on their Attack stat
+
+select name,attack from pokemon order by attack desc limit 10;
+
+
+g)// Find out top 15 Pokémon based on their defence stat
+
+select name,defense from pokemon order by defense desc limit 15;
+
+
+h) //Find out the top 20 Pokémon based on their total power
+
+select name,total from pokemon order by total desc limit 20;
+
+
+i)// Find out the top 10 Pokémon having a drastic change in their attack and sp.attack
+
+select name,('attack–sp_atk') as atk_diff from pokemon order by atk_diff limit 10;
+
+
+j)// Find the top 10 Pokémon having a drastic change in their defence and special defence
+
+select name,('defense–sp_defense') as def_diff from pokemon order by def_diff limit 10;
